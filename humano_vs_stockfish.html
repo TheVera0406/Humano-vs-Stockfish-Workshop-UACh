@@ -1,578 +1,226 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Humano vs Stockfish</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Roboto+Mono:wght@500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --chess-bg-main: #262421;
-            --chess-bg-deck: #312e2b;
-            --chess-bg-light: #3d3b39;
-            --chess-green: #81b64c;
-            --chess-green-hover: #a3d160;
-            --chess-board-dark: #739552;
-            --chess-board-light: #ebecd0;
-            --chess-text-main: #ffffff;
-            --chess-text-muted: #bababa;
-            --chess-red: #fa412d;
-            --chess-eval-bar: #333333;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            background-color: var(--chess-bg-main);
-            color: var(--chess-text-main);
-            font-family: 'Montserrat', sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        #deck {
-            width: 100vw;
-            height: 100vh;
-            max-width: 1400px;
-            max-height: 800px;
-            background-color: var(--chess-bg-deck);
-            position: relative;
-            box-shadow: 0 0 50px rgba(0,0,0,0.8);
-            display: flex;
-            flex-direction: column;
-            border-radius: 12px;
-            overflow: hidden;
-        }
-
-        @media (min-width: 1400px) and (min-height: 800px) {
-            #deck {
-                width: 90vw;
-                height: 85vh;
-            }
-        }
-
-        #slides-container {
-            flex-grow: 1;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .slide {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            padding: 60px 80px;
-            opacity: 0;
-            transform: translateX(50px);
-            transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            overflow-y: auto;
-        }
-
-        .slide.active {
-            opacity: 1;
-            transform: translateX(0);
-            pointer-events: auto;
-        }
-
-        .slide.previous {
-            transform: translateX(-50px);
-        }
-
-        h1 { font-size: 3.5rem; font-weight: 800; margin-bottom: 0.5rem; line-height: 1.1; }
-        h2 { font-size: 2.5rem; font-weight: 700; margin-bottom: 1.5rem; color: #fff; }
-        h3 { font-size: 1.8rem; font-weight: 600; margin-bottom: 1rem; color: var(--chess-green); }
-        p { font-size: 1.2rem; line-height: 1.6; color: var(--chess-text-muted); margin-bottom: 1.5rem; }
-        
-        .text-green { color: var(--chess-green); }
-        .text-light { color: var(--chess-text-main); }
-        .badge { background: var(--chess-bg-light); padding: 5px 12px; border-radius: 6px; font-size: 0.9rem; font-weight: 600; text-transform: uppercase; color: var(--chess-green); display: inline-block; margin-bottom: 15px; letter-spacing: 1px; }
-
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
-        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; align-items: stretch; }
-
-        /* Componentes UI */
-        .board-mockup {
-            aspect-ratio: 1;
-            background: var(--chess-board-light);
-            border-radius: 4px;
-            overflow: hidden;
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            grid-template-rows: repeat(4, 1fr);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-            border: 8px solid var(--chess-bg-light);
-        }
-        .board-mockup div { display: flex; justify-content: center; align-items: center; font-size: 3rem; color: #333; }
-        .board-mockup div.dark { background-color: var(--chess-board-dark); }
-        .board-mockup div.light { background-color: var(--chess-board-light); }
-
-        .vote-panel { background: var(--chess-bg-main); padding: 30px; border-radius: 12px; text-align: center; }
-        .btn-vote { display: block; width: 100%; padding: 20px; font-size: 1.5rem; font-weight: 700; border-radius: 8px; border: none; cursor: pointer; font-family: inherit; margin-bottom: 15px; transition: all 0.2s; box-shadow: 0 5px 0 rgba(0,0,0,0.2); }
-        .btn-yes { background-color: var(--chess-green); color: white; }
-        .btn-yes:hover { background-color: var(--chess-green-hover); transform: translateY(-2px); }
-        .btn-no { background-color: var(--chess-bg-light); color: white; }
-        .btn-no:hover { background-color: #4a4846; transform: translateY(-2px); }
-        #vote-result { margin-top: 20px; font-weight: 600; min-height: 24px; color: #fff; }
-
-        .data-table { width: 100%; border-collapse: collapse; margin-top: 20px; background: var(--chess-bg-main); border-radius: 12px; overflow: hidden; }
-        .data-table th, .data-table td { padding: 15px 20px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .data-table th { background: var(--chess-bg-light); color: var(--chess-green); font-weight: 700; }
-
-        .code-block { background: #1e1e1e; padding: 25px; border-radius: 8px; font-family: 'Roboto Mono', monospace; font-size: 1.2rem; color: #d4d4d4; border-left: 4px solid var(--chess-green); word-wrap: break-word; line-height: 1.8; }
-        .fen-pieces { color: #ce9178; } .fen-turn { color: #9cdcfe; } .fen-castle { color: #dcdcaa; }
-
-        .tree-diagram { display: flex; flex-direction: column; align-items: center; gap: 30px; margin-top: 30px; }
-        .node { background: var(--chess-bg-light); padding: 15px 30px; border-radius: 30px; font-weight: 600; border: 2px solid var(--chess-green); text-align: center; min-width: 150px; }
-        .node.pruned { border-color: var(--chess-red); color: var(--chess-text-muted); opacity: 0.6; }
-        .branches { display: flex; gap: 40px; position: relative; }
-        .branches::before { content: ''; position: absolute; top: -30px; left: 20%; right: 20%; height: 2px; background: var(--chess-green); }
-        .branch { display: flex; flex-direction: column; align-items: center; position: relative; }
-        .branch::before { content: ''; position: absolute; top: -30px; width: 2px; height: 30px; background: var(--chess-green); }
-        .branch.pruned-branch::before, .branch.pruned-branch .branches::before { background: var(--chess-red); opacity: 0.5;}
-        
-        .info-card { background: var(--chess-bg-main); padding: 25px; border-radius: 12px; border-top: 4px solid var(--chess-green); }
-        
-        .eval-math { display: flex; justify-content: center; align-items: center; gap: 15px; flex-wrap: wrap; background: var(--chess-bg-main); padding: 20px; border-radius: 12px; font-size: 1.5rem; font-weight: bold; margin-bottom: 30px; }
-        .eval-box { background: var(--chess-bg-light); padding: 15px 25px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; }
-        .eval-label { font-size: 0.9rem; color: var(--chess-text-muted); text-transform: uppercase; margin-bottom: 5px; }
-        .eval-val.pos { color: var(--chess-green); }
-        .eval-val.neg { color: var(--chess-red); }
-
-        .nnue-diagram { display: flex; align-items: center; justify-content: space-between; background: var(--chess-bg-main); padding: 30px; border-radius: 12px; margin-top: 20px;}
-        .nnue-layer { display: flex; flex-direction: column; gap: 15px; }
-        .nnue-node { width: 50px; height: 50px; border-radius: 50%; background: #3b82f6; display: flex; justify-content: center; align-items: center; font-weight: bold; }
-        .nnue-node.input { background: var(--chess-green); }
-        .nnue-node.output { background: var(--chess-green); width: 80px; height: 80px; font-size: 1.5rem; }
-        .nnue-connection { height: 2px; background: rgba(255,255,255,0.2); width: 100px; position: relative; }
-
-        .logo { position: absolute; top: 30px; max-width: 120px; height: auto; }
-        .logo-izq { left: 40px; }
-        .logo-der { right: 40px; }
-
-        #slide-0 { background-color: #ffffff; }
-        #slide-0 h1, #slide-0 h2 { color: #312e2b !important; }
-        #slide-0 h1 span.text-light { color: #312e2b !important; }
-        #slide-0 .info-box { background-color: transparent; padding: 20px; display: inline-block; }
-        #slide-0 .info-box p { color: #312e2b !important; }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Humano vs Stockfish - Puntos 1 al 8</title>
+  <style>
+    :root{
+      --bg:#171614;--deck:#312e2b;--panel:#262421;--panel2:#3b3937;
+      --green:#81b64c;--green2:#a3d160;--light:#ebecd0;--board:#739552;
+      --text:#fff;--muted:#c7c5c3;--red:#ef5b4c;--line:rgba(255,255,255,.12);
+      --shadow:0 24px 70px rgba(0,0,0,.55);
+    }
+    *{box-sizing:border-box}
+    html,body{width:100%;height:100%;margin:0}
+    body{display:grid;place-items:center;overflow:hidden;background:radial-gradient(circle at 50% 5%,#34312d 0,#171614 58%);color:var(--text);font-family:Montserrat,"Segoe UI",Arial,sans-serif}
+    button{font:inherit}
+    #deck{position:relative;width:min(100vw,calc(100vh * 16 / 9));height:min(100vh,calc(100vw * 9 / 16));max-width:1440px;max-height:810px;background:var(--deck);overflow:hidden;box-shadow:var(--shadow)}
+    #deck:before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px);background-size:32px 32px;pointer-events:none}
+    .slide{position:absolute;inset:0;padding:52px 66px 70px;display:flex;flex-direction:column;justify-content:center;opacity:0;transform:translateX(55px) scale(.992);pointer-events:none;transition:opacity .36s ease,transform .45s cubic-bezier(.2,.8,.2,1);overflow:hidden}
+    .slide.active{opacity:1;transform:none;pointer-events:auto}
+    .slide.before{transform:translateX(-55px) scale(.992)}
+    .slide.cover{background:radial-gradient(circle at 50% 35%,#fff 0,#f6f6f2 68%,#e8e8e2 100%);color:#2f2c29;text-align:center;align-items:center}
+    .slide.cover:after{content:"";position:absolute;left:0;right:0;bottom:0;height:14px;background:var(--green)}
+    .cover-mark{width:108px;height:108px;border-radius:28px;display:grid;place-items:center;background:var(--green);color:#fff;font-size:66px;box-shadow:0 14px 30px rgba(70,110,30,.28);margin-bottom:22px}
+    .cover h1{font-size:clamp(42px,5vw,70px);margin:0;font-weight:900;letter-spacing:-2.5px}.cover h1 span{color:var(--green)}
+    .cover h2{color:#403d39;font-size:clamp(24px,2.4vw,34px);margin:10px 0 34px;font-weight:700}
+    .cover-meta{font-size:17px;line-height:1.7;color:#55514d;font-weight:600}.cover-meta strong{color:#2f2c29}
+    .cover-logo{position:absolute;top:30px;height:72px;width:auto;object-fit:contain;z-index:2}.cover-logo.uach{left:38px;max-width:220px}.cover-logo.informatica{right:38px;max-width:150px;border-radius:6px}
+    .kicker{display:inline-flex;align-items:center;gap:9px;width:max-content;margin-bottom:14px;padding:7px 13px;border-radius:8px;background:var(--panel2);color:var(--green2);font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1px}
+    .kicker .num{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--green);color:#1d2514}
+    h1,h2,h3,p{margin-top:0}h2{font-size:clamp(31px,3vw,44px);line-height:1.12;margin-bottom:15px;letter-spacing:-1px}h3{font-size:22px;margin-bottom:12px;color:var(--green2)}
+    p{font-size:clamp(16px,1.35vw,20px);line-height:1.55;color:var(--muted);margin-bottom:18px}strong{color:#fff}
+    .lead{font-size:clamp(20px,1.75vw,27px);line-height:1.48;max-width:1050px}.center{text-align:center}.centered{align-items:center;text-align:center}
+    .quote{padding:20px 24px;border-left:5px solid var(--green);border-radius:0 12px 12px 0;background:rgba(38,36,33,.86);font-size:21px;line-height:1.52;color:#fff}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:center}.grid2.wide-left{grid-template-columns:1.15fr .85fr}.grid2.wide-right{grid-template-columns:.84fr 1.16fr}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:22px;box-shadow:0 12px 28px rgba(0,0,0,.18)}.card.green-top{border-top:5px solid var(--green)}
+    .card h3{color:#fff}.icon{font-size:36px;margin-bottom:12px}.icon.green{color:var(--green)}
+    ul{margin:0;padding-left:22px;color:var(--muted);font-size:17px;line-height:1.5}li{margin:7px 0}li::marker{color:var(--green)}
+    .steps{display:grid;gap:10px}.step{display:flex;align-items:center;gap:14px;padding:12px 15px;background:var(--panel);border-radius:10px;border:1px solid var(--line);font-size:17px}.step b{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--green);color:#20271a}
+    .arrow{color:var(--green);font-size:27px;font-weight:900;text-align:center}
+    .visual{background:#141310;border:1px solid rgba(129,182,76,.35);border-radius:16px;padding:12px;box-shadow:0 16px 35px rgba(0,0,0,.35);display:grid;place-items:center;min-height:0}.visual.light{background:#e8e8e1}.visual img{display:block;width:100%;height:100%;max-height:500px;object-fit:contain;border-radius:8px}.visual.landscape img{max-height:460px}.visual.square img{max-height:510px}
+    .data-table{width:100%;border-collapse:separate;border-spacing:0;background:var(--panel);border-radius:14px;overflow:hidden;border:1px solid var(--line);font-size:16px}.data-table th,.data-table td{padding:11px 16px;text-align:left;border-bottom:1px solid var(--line)}.data-table tr:last-child td{border-bottom:none}.data-table th{background:var(--panel2);color:var(--green2);font-size:14px;text-transform:uppercase;letter-spacing:.5px}.data-table td:last-child{font-family:Consolas,"Courier New",monospace;color:#fff}
+    .fen{background:#171717;border-left:5px solid var(--green);border-radius:10px;padding:20px 22px;font-family:Consolas,"Courier New",monospace;font-size:clamp(15px,1.5vw,22px);line-height:1.6;overflow-wrap:anywhere;color:#f0d9b5}.fen .turn{color:#7dcfff}.fen .castle{color:#dcdcaa}
+    .question{padding:17px 21px;border-radius:13px;background:linear-gradient(135deg,rgba(129,182,76,.18),rgba(129,182,76,.05));border:1px solid rgba(129,182,76,.45);font-size:20px;line-height:1.45;color:#fff}.question:before{content:"?";display:inline-grid;place-items:center;width:31px;height:31px;margin-right:11px;border-radius:50%;background:var(--green);color:#1f2718;font-weight:900}
+    .reveal-btn,.nav-btn{border:0;border-radius:9px;background:var(--green);color:#182010;font-weight:900;cursor:pointer;box-shadow:0 4px 0 #547d2c;transition:.15s}.reveal-btn{padding:11px 18px;margin-top:13px}.reveal-btn:hover,.nav-btn:hover{background:var(--green2);transform:translateY(-1px)}.answer{display:none;margin-top:12px;padding:12px 16px;border-radius:10px;background:#202a18;color:#dff7c6;border:1px solid #5f8c36;font-weight:700}.answer.show{display:block;animation:pop .25s ease}@keyframes pop{from{transform:translateY(7px);opacity:0}to{transform:none;opacity:1}}
+    .compare{display:grid;grid-template-columns:1fr 1fr;gap:22px}.compare .head{font-size:21px;color:#fff;font-weight:800;margin-bottom:12px}.compare .human{border-top:5px solid #f0c75e}.compare .machine{border-top:5px solid var(--green)}
+    .chips{display:flex;flex-wrap:wrap;gap:10px}.chip{padding:9px 13px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);font-weight:700;color:#fff;font-size:15px}
+    .metric{display:flex;align-items:center;gap:12px}.metric strong{font-size:34px;color:var(--green2)}
+    .formula{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:10px;padding:17px;background:var(--panel);border-radius:14px;font-size:20px;font-weight:800}.formula span{padding:10px 13px;background:var(--panel2);border-radius:8px}.formula .result{border:2px solid var(--green);color:var(--green2)}
+    .mini-flow{display:flex;align-items:center;justify-content:center;gap:13px;flex-wrap:wrap}.flow-box{padding:14px 18px;border-radius:11px;background:var(--panel);border:1px solid var(--line);font-weight:800}.flow-arr{color:var(--green);font-size:27px}
+    .takeaway{margin-top:15px;color:var(--green2);font-weight:800;text-align:center;font-size:19px}
+    .section-tab{position:absolute;right:24px;top:22px;color:rgba(255,255,255,.25);font-size:14px;font-weight:800;letter-spacing:.8px}
+    #chrome{position:absolute;left:0;right:0;bottom:0;height:49px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;background:rgba(23,22,20,.95);border-top:1px solid var(--line);z-index:30}
+    #progress-track{position:absolute;left:0;right:0;top:0;height:3px;background:rgba(255,255,255,.08)}#progress{height:100%;width:0;background:var(--green);transition:width .35s ease}
+    #counter{font:700 13px Consolas,monospace;color:var(--muted)}.navs{display:flex;gap:8px}.nav-btn{width:34px;height:30px;box-shadow:none;font-size:16px}.nav-btn.secondary{background:var(--panel2);color:#fff}.nav-btn:disabled{opacity:.3;cursor:not-allowed;transform:none}
+    .hint{font-size:12px;color:#878481}.point-tag{color:var(--green2);font-weight:900}
+    @media(max-width:900px){.slide{padding:34px 38px 58px}.grid2,.grid2.wide-left,.grid2.wide-right,.grid3{gap:15px}.card{padding:16px}p{margin-bottom:11px}.visual img{max-height:390px}}
+    @media print{body{overflow:visible;background:#fff}#deck{width:100%;height:auto;max-width:none;max-height:none;box-shadow:none;overflow:visible}.slide{position:relative;width:100%;height:56.25vw;opacity:1!important;transform:none!important;page-break-after:always;pointer-events:auto}#chrome{display:none}}
+  </style>
 </head>
 <body>
+<main id="deck" aria-label="Presentación Humano vs Stockfish">
+  <section class="slide cover active">
+    <img class="cover-logo uach" src="logos/logo_UACh.svg" alt="Logo Universidad Austral de Chile">
+    <img class="cover-logo informatica" src="logos/logo_Informatica.jpeg" alt="Logo Instituto de Informática">
+    <div class="cover-mark">♞</div>
+    <h1>Humano <span>vs</span> Stockfish</h1>
+    <h2>¿Pensamos igual?</h2>
+    <div class="cover-meta"><strong>Taller de Ajedrez e Informática</strong><br>Cristian Vera Ulloa · Lorenzo Vera Quijón<br>Instituto de Informática · Universidad Austral de Chile</div>
+  </section>
 
-    <div id="deck">
-        <div id="slides-container">
-            
-            <!-- Diapositiva 1: Portada -->
-            <div class="slide active" id="slide-0">
-                <div style="text-align: center; max-width: 800px; margin: 0 auto;">
-                    <i class="fa-solid fa-chess-knight" style="font-size: 5rem; color: var(--chess-green); margin-bottom: 20px;"></i>
-                    <h1>Humano <span class="text-light">vs</span> Stockfish</h1>
-                    <h2 style="font-size: 2rem; margin-bottom: 40px;">¿Pensamos igual?</h2>
-                    
-                    <img src="logos/logo_UACh.svg" alt="Logo UACh" class="logo logo-izq">
-                    <img src="logos/logo_Informatica.jpeg" alt="Logo Instituto de Informática" class="logo logo-der">
-                    
-                    <div class="info-box">
-                        <p style="margin: 0; font-weight: 600;">Taller de Ajedrez e Informática</p>
-                        <p style="margin: 0; font-size: 1rem; margin-top: 5px;">Cristian Vera Ulloa - Lorenzo Vera Quijón</p>
-                        <p style="margin: 0; font-size: 1rem; margin-top: 5px;">Instituto de Informática - Universidad Austral de Chile</p>
-                    </div>
-                </div>
-            </div>
+  <section class="slide centered">
+    <span class="section-tab">PREGUNTA CENTRAL</span>
+    <div style="font-size:72px;color:var(--green);margin-bottom:16px">♟ → 💻</div>
+    <h2 style="max-width:1050px">¿Cómo pasa Stockfish de observar una posición a recomendar una jugada?</h2>
+    <p class="lead">Seguiremos el recorrido completo: datos, algoritmos, árbol de búsqueda, optimización y evaluación.</p>
+    <div class="mini-flow" style="margin-top:14px"><span class="flow-box">Tablero</span><span class="flow-arr">→</span><span class="flow-box">Datos</span><span class="flow-arr">→</span><span class="flow-box">Búsqueda</span><span class="flow-arr">→</span><span class="flow-box">Evaluación</span><span class="flow-arr">→</span><span class="flow-box">Jugada</span></div>
+  </section>
 
-            <!-- Diapositiva 2: Introducción -->
-            <div class="slide" id="slide-1">
-                <div class="slide-content" style="max-width: 1100px; text-align: left; margin: 0 auto; width: 100%;">
-                    <span class="badge">Conceptos Base</span>
-                    <h2 style="font-size: 2.2rem; margin-top: 10px; margin-bottom: 20px;">¿Qué tienen en común el ajedrez y la Ingeniería Informática?</h2>
-                    
-                    <p style="font-size: 1.15rem; margin-bottom: 30px;">
-                        Ambos buscan resolver problemas tomando decisiones de manera <strong>lógica y eficiente</strong>.
-                    </p>
-
-                    <div class="grid-2" style="align-items: stretch;">
-                        
-                        <!-- Columna Izquierda: Humano vs Máquina -->
-                        <div style="display: flex; flex-direction: column; gap: 20px;">
-                            
-                            <!-- Caja Humano -->
-                            <div style="background: var(--chess-bg-light); padding: 25px; border-radius: 12px;">
-                                <h3 style="font-size: 1.2rem; color: #fff; margin-bottom: 15px;">
-                                    <i class="fa-solid fa-brain text-green" style="margin-right: 10px;"></i> Cuando un ajedrecista analiza:
-                                </h3>
-                                <ul style="font-size: 1rem; margin-bottom: 0; line-height: 1.3;">
-                                    <li style="margin-bottom: 12px;"><i class="fa-solid fa-eye" style="font-size: 0.9rem; margin-top:3px;"></i> Observa información del tablero</li>
-                                    <li style="margin-bottom: 12px;"><i class="fa-solid fa-chess-knight" style="font-size: 0.9rem; margin-top:3px;"></i> Identifica jugadas posibles</li>
-                                    <li style="margin-bottom: 12px;"><i class="fa-solid fa-code-branch" style="font-size: 0.9rem; margin-top:3px;"></i> Calcula variantes</li>
-                                    <li style="margin-bottom: 12px;"><i class="fa-solid fa-scale-balanced" style="font-size: 0.9rem; margin-top:3px;"></i> Compara y descarta opciones</li>
-                                    <li style="margin-bottom: 0;"><i class="fa-solid fa-check" style="font-size: 0.9rem; margin-top:3px;"></i> Elige la mejor jugada</li>
-                                </ul>
-                            </div>
-
-                            <!-- Caja Stockfish -->
-                            <div style="background: var(--chess-bg-main); padding: 20px; border-radius: 12px; border-left: 4px solid var(--chess-green);">
-                                <p style="margin: 0; font-size: 1rem; color: #fff; line-height: 1.5;">
-                                    <strong>Stockfish</strong> realiza un proceso parecido, pero mediante datos, algoritmos, árboles de búsqueda, optimización e IA.
-                                </p>
-                                <p style="margin: 0; margin-top: 10px; font-size: 0.9rem; color: var(--chess-text-muted);">
-                                    <i class="fa-solid fa-circle-info text-green" style="margin-right: 5px;"></i> Partida = Problema | Jugada = Solución | Variante = Camino explorado
-                                </p>
-                            </div>
-
-                        </div>
-
-                        <!-- Columna Derecha: ¿Qué es un Algoritmo? -->
-                        <div style="background: #1e1e1e; padding: 35px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; justify-content: center;">
-                            <i class="fa-solid fa-diagram-project" style="font-size: 3rem; color: var(--chess-green); margin-bottom: 20px;"></i>
-                            <h3 style="font-size: 1.8rem; color: #fff; margin-bottom: 15px;">¿Qué es un Algoritmo?</h3>
-                            
-                            <p style="font-size: 1.1rem; color: #d4d4d4; line-height: 1.7; margin-bottom: 20px;">
-                                Es una <strong>serie ordenada de instrucciones o pasos lógicos</strong> finitos que se siguen para resolver un problema o alcanzar un resultado específico.
-                            </p>
-                            
-                            <div style="padding: 15px 20px; background: rgba(129, 182, 76, 0.1); border-radius: 8px; border-left: 3px solid var(--chess-green);">
-                                <p style="margin: 0; font-size: 1rem; color: var(--chess-green); line-height: 1.5;">
-                                    <strong>Ejemplo:</strong> Piensa en ello como una "receta de cocina" matemática que le dice paso a paso a la máquina exactamente cómo evaluar el tablero.
-                                </p>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-            </div>
-
-            <!-- Diapositiva 3: Interactiva -->
-            <div class="slide" id="slide-2">
-                <div class="slide-content" style="max-width: 1000px; margin: 0 auto; width: 100%;">
-                    <span class="badge">Votación en Vivo</span>
-                    <h2>¿Quién está mejor en esta posición?</h2>
-                    
-                    <div class="grid-2" style="margin-top: 30px;">
-                        
-                        <!-- Contenedor de la Imagen del Tablero -->
-                        <div style="border: 8px solid var(--chess-bg-light); border-radius: 8px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.4);">
-                            <!-- Guarda tu imagen en la carpeta 'logos' o cambia la ruta aquí -->
-                            <img src="tableros/board_1.png" style="width: 100%; height: auto; display: block;">
-                        </div>
-
-                        <!-- Panel de votación -->
-                        <div class="vote-panel" style="display: flex; flex-direction: column; justify-content: center; height: 100%;">
-                            <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; margin-bottom: 20px; display: inline-block;">
-                                <span style="color: var(--chess-green); font-size: 0.9rem;"><i class="fa-solid fa-circle" style="font-size: 0.6rem; vertical-align: middle;"></i> PARTIDA EN CURSO</span>
-                            </div>
-
-                            <p style="color: var(--chess-text-muted); font-weight: 600; text-transform: uppercase; margin-bottom: 5px; font-size: 0.9rem;">Jugada Propuesta</p>
-                            <h3 style="color: #fff; font-size: 3.5rem; margin-bottom: 10px; letter-spacing: 2px;">Dxf7</h3>
-                            <p style="font-size: 1.2rem; color: #fff; font-weight: bold; margin-bottom: 5px;">¿LA JUGARÍAS?</p>
-                            <p style="font-size: 0.9rem; margin-bottom: 25px;">MIRA LAS DEFENSAS ANTES DE RESPONDER</p>
-                            
-                            <div style="display: flex; gap: 15px; margin-bottom: 20px;">
-                                <button class="btn-vote btn-yes" style="margin-bottom: 0; padding: 15px;" onclick="registrarVoto('yes')">SÍ</button>
-                                <button class="btn-vote btn-no" style="margin-bottom: 0; padding: 15px;" onclick="registrarVoto('no')">NO</button>
-                            </div>
-                            
-                            <div id="vote-result" style="min-height: 50px;"></div>
-                            
-                            <p style="font-size: 0.85rem; margin-top: 15px; color: var(--chess-text-muted); border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
-                                <strong>PISTA:</strong> no evalúes solo el material; observa la seguridad del rey.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Diapositiva 4: Abstracción -->
-            <div class="slide" id="slide-3">
-                <span class="badge">Estructura de Datos</span>
-                <h2>Para nosotros es un tablero... para el computador son datos</h2>
-                <p>Nosotros miramos el tablero y reconocemos amenazas. El computador recibe datos exactos.</p>
-                
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Información Visual (Humano)</th>
-                            <th>Representación como Dato (Máquina)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><i class="fa-solid fa-chess-queen text-green" style="margin-right:10px"></i> Dama blanca</td>
-                            <td><code>Casilla h5</code></td>
-                        </tr>
-                        <tr>
-                            <td><i class="fa-solid fa-chess-bishop text-green" style="margin-right:10px"></i> Alfil blanco</td>
-                            <td><code>Casilla c4</code></td>
-                        </tr>
-                        <tr>
-                            <td><i class="fa-solid fa-chess-king text-green" style="margin-right:10px"></i> Rey negro</td>
-                            <td><code>Casilla e8</code></td>
-                        </tr>
-                        <tr>
-                            <td><i class="fa-solid fa-chess-pawn text-green" style="margin-right:10px"></i> Peón negro</td>
-                            <td><code>Casilla f7</code></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Diapositiva 5: FEN -->
-            <div class="slide" id="slide-4">
-                <span class="badge">Protocolos</span>
-                <h2>La fotografía digital: Formato FEN</h2>
-                <p>Forsyth-Edwards Notation (FEN) toma una "fotografía" de la posición.</p>
-                
-                <div class="code-block" style="text-align: center;">
-                    <span class="fen-pieces">r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR</span> <span class="fen-turn">w</span> <span class="fen-castle">KQkq</span> - 4 4
-                </div>
-                
-                <div style="background: var(--chess-bg-main); padding: 20px; border-radius: 8px; margin-top: 30px; text-align: center;">
-                    <p style="font-size: 1.2rem; color: #fff; margin:0;">
-                        "Uno de los primeros problemas de la informática consiste en transformar elementos del mundo real en datos que el computador pueda guardar y procesar."
-                    </p>
-                </div>
-            </div>
-
-            <!-- Diapositiva 6: Algoritmos -->
-            <div class="slide" id="slide-5">
-                <span class="badge">Algoritmos</span>
-                <h2>Calcular una variante es seguir un algoritmo</h2>
-                <p>"Un algoritmo es una serie ordenada de instrucciones que se siguen para resolver un problema o alcanzar un resultado".</p>
-                
-                <div class="tree-diagram">
-                    <div class="node" style="background: var(--chess-green); color: white;">Probar Dxf7</div>
-                    <div style="height: 20px; width: 2px; background: var(--chess-green);"></div>
-                    <div class="node" style="border-radius: 0; transform: skewX(-10deg);">¿La jugada es legal?</div>
-                    <div style="height: 20px; width: 2px; background: var(--chess-green);"></div>
-                    <div class="node" style="border-radius: 0; transform: skewX(-10deg);">¿El rey negro queda en jaque?</div>
-                    <div style="height: 20px; width: 2px; background: var(--chess-green);"></div>
-                    <div class="node">Buscar respuestas legales</div>
-                    <div style="height: 20px; width: 2px; background: var(--chess-green);"></div>
-                    <div class="node" style="border-radius: 0; transform: skewX(-10deg);">¿Existe alguna respuesta?</div>
-                    
-                    <div class="branches" style="margin-top: 30px;">
-                        <div class="branch">
-                            <div class="node" style="background: var(--chess-green); color: white;">Sí: Continuar calculando</div>
-                        </div>
-                        <div class="branch">
-                            <div class="node" style="background: var(--chess-board-light); color: black;">No: Jaque mate</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Diapositiva 7: Árbol de Búsqueda -->
-            <div class="slide" id="slide-6">
-                <span class="badge">Búsqueda</span>
-                <h2>¿Qué es un árbol de búsqueda?</h2>
-                <p>Stockfish explora jugadas (ramas) y las posiciones que producen (nodos).</p>
-
-                <div class="tree-diagram">
-                    <div class="node" style="border-radius: 50%; width: 120px; height: 120px; display: flex; align-items: center; justify-content: center; flex-direction: column;">
-                        <span style="font-size: 0.8rem; text-transform: uppercase;">Nivel 0</span>
-                        <strong>NODO RAÍZ</strong>
-                    </div>
-                    
-                    <div class="branches" style="margin-top: 40px; gap: 80px;">
-                        <div class="branch">
-                            <div class="node">Jugada A (Nodo Hijo)</div>
-                            <div class="branches" style="margin-top: 40px; gap: 20px;">
-                                <div class="branch"><div class="node" style="border-radius: 50%; width: 60px; min-width: 60px;">Hoja</div></div>
-                                <div class="branch"><div class="node" style="border-radius: 50%; width: 60px; min-width: 60px;">Hoja</div></div>
-                            </div>
-                        </div>
-                        <div class="branch">
-                            <div class="node">Jugada B (Nodo Hijo)</div>
-                            <div class="branches" style="margin-top: 40px; gap: 20px;">
-                                <div class="branch"><div class="node" style="border-radius: 50%; width: 60px; min-width: 60px;">Hoja</div></div>
-                                <div class="branch"><div class="node" style="border-radius: 50%; width: 60px; min-width: 60px;">Hoja</div></div>
-                            </div>
-                        </div>
-                        <div class="branch">
-                            <div class="node">Jugada C (Nodo Hijo)</div>
-                        </div>
-                    </div>
-                </div>
-                <p style="text-align: center; margin-top: 40px;">En solo 6 medios movimientos existen ≈ 729.000.000 de posiciones posibles.</p>
-            </div>
-
-            <!-- Diapositiva 8: Poda -->
-            <div class="slide" id="slide-7">
-                <span class="badge">Optimización</span>
-                <h2>Poda y Eficiencia</h2>
-                <p>Stockfish no analiza todas las variantes. Utiliza <strong>Poda</strong> para cortar ramas que no cambiarán la decisión final.</p>
-
-                <div class="grid-2">
-                    <div class="info-card">
-                        <h3 style="color: #fff; font-size: 1.2rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; margin-bottom: 15px;">Ejemplo de Poda</h3>
-                        <div class="tree-diagram" style="margin-top: 0; gap: 20px; align-items: flex-start;">
-                             <div class="node" style="width: 100%;">Posición Actual (Juegan Blancas)</div>
-                             <div style="display: flex; gap: 20px; width: 100%;">
-                                <div style="flex: 1; border: 2px solid var(--chess-green); padding: 15px; border-radius: 8px; text-align: center;">
-                                    <strong>Jugada A</strong><br>
-                                    <span style="color: var(--chess-green); font-size: 2rem; font-weight: bold;">+3</span><br>
-                                    <small>Mejor opción</small>
-                                </div>
-                                <div style="flex: 1; border: 2px solid #555; padding: 15px; border-radius: 8px; text-align: center;">
-                                    <strong>Jugada B</strong><br>
-                                    Resp. Negra 1 <i class="fa-solid fa-arrow-right"></i> <span style="font-weight: bold;">+1</span><br>
-                                    <span style="color: var(--chess-red); text-decoration: line-through;">Resp. Negra 2 (Podada)</span>
-                                </div>
-                             </div>
-                        </div>
-                    </div>
-                    <div>
-                        <ul style="font-size: 1.1rem; line-height: 1.8;">
-                            <li><i class="fa-solid fa-scissors"></i> <strong>Poda:</strong> No continúa analizando una rama.</li>
-                            <li><i class="fa-solid fa-down-left-and-up-right-to-center"></i> <strong>Reducción:</strong> Analiza una rama con menos profundidad.</li>
-                            <li><i class="fa-solid fa-magnifying-glass-plus"></i> <strong>Extensión:</strong> Analiza una variante importante con mayor profundidad.</li>
-                        </ul>
-                        <p style="font-size: 1rem;">La poda alfa-beta permite detener el análisis cuando se demuestra que no puede mejorar la alternativa encontrada.</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Diapositiva 9: Evaluación -->
-            <div class="slide" id="slide-8">
-                <span class="badge">El Corazón del Motor</span>
-                <h2>¿Cómo evaluamos una posición?</h2>
-                <p>Una vez que el árbol llega a una "hoja", ¿cómo sabe si la posición es buena o mala?</p>
-
-                <div class="eval-math">
-                    <div class="eval-box">
-                        <span class="eval-label">Material</span>
-                        <div style="display:flex; align-items:center; gap: 10px;">
-                            <i class="fa-solid fa-chess" style="color: var(--chess-text-main);"></i>
-                            <span class="eval-val pos">+1.0</span>
-                        </div>
-                    </div>
-                    <span style="color: var(--chess-text-muted);">+</span>
-                    <div class="eval-box">
-                        <span class="eval-label">Seguridad Rey</span>
-                        <div style="display:flex; align-items:center; gap: 10px;">
-                            <i class="fa-solid fa-shield-halved" style="color: var(--chess-text-main);"></i>
-                            <span class="eval-val neg">-0.5</span>
-                        </div>
-                    </div>
-                    <span style="color: var(--chess-text-muted);">+</span>
-                    <div class="eval-box">
-                        <span class="eval-label">Actividad</span>
-                        <div style="display:flex; align-items:center; gap: 10px;">
-                            <i class="fa-solid fa-bolt" style="color: var(--chess-text-main);"></i>
-                            <span class="eval-val pos">+0.2</span>
-                        </div>
-                    </div>
-                    <span style="color: var(--chess-text-muted);">=</span>
-                    <div class="eval-box" style="background: var(--chess-bg-main); border: 2px solid var(--chess-green);">
-                        <span class="eval-label">Resultado</span>
-                        <span class="eval-val pos" style="font-size: 2rem;">+0.7</span>
-                    </div>
-                </div>
-                
-                <p style="text-align: center; font-size: 1.1rem;">"Podríamos programar una regla para cada elemento... El problema es que el ajedrez es demasiado complejo."</p>
-            </div>
-
-            <!-- Diapositiva 10: NNUE -->
-            <div class="slide" id="slide-9">
-                <span class="badge">Machine Learning</span>
-                <h2>Redes Neuronales (NNUE)</h2>
-                <p>En lugar de reglas fijas, Stockfish usa una red neuronal que aprende patrones de millones de ejemplos para evaluar la posición.</p>
-
-                <div class="nnue-diagram">
-                    <div class="nnue-layer">
-                        <div style="text-align: center; color: var(--chess-text-muted); font-size: 0.9rem; margin-bottom: 10px;">Entradas<br>(Piezas/Casillas)</div>
-                        <div class="nnue-node input"><i class="fa-solid fa-chess-knight" style="color:#262421;"></i></div>
-                        <div class="nnue-node input"><i class="fa-solid fa-chess-pawn" style="color:#262421;"></i></div>
-                        <div class="nnue-node input"><i class="fa-solid fa-chess-king" style="color:#262421;"></i></div>
-                    </div>
-                    
-                    <div class="nnue-connection"></div>
-                    
-                    <div class="nnue-layer">
-                        <div style="text-align: center; color: var(--chess-text-muted); font-size: 0.9rem; margin-bottom: 10px;">Capas Ocultas<br>(Conexiones/Pesos)</div>
-                        <div class="nnue-node"></div>
-                        <div class="nnue-node"></div>
-                        <div class="nnue-node"></div>
-                        <div class="nnue-node"></div>
-                    </div>
-
-                    <div class="nnue-connection"></div>
-
-                    <div class="nnue-layer">
-                        <div style="text-align: center; color: var(--chess-text-muted); font-size: 0.9rem; margin-bottom: 10px;">Salida<br>(Evaluación)</div>
-                        <div class="nnue-node output" style="color: #262421;">+0.8</div>
-                    </div>
-                </div>
-                <p style="text-align: center; margin-top: 20px; font-weight: bold; color: var(--chess-green);">NNUE evalúa la posición; el árbol de búsqueda compara las jugadas.</p>
-            </div>
-
-        </div>
+  <section class="slide">
+    <span class="section-tab">PUNTO 1</span><span class="kicker"><span class="num">1</span>Conceptos base</span>
+    <h2>¿Qué tienen en común el ajedrez y la Ingeniería Informática?</h2>
+    <p class="lead">Ambos buscan resolver problemas tomando decisiones de manera <strong>lógica y eficiente</strong>.</p>
+    <div class="grid2">
+      <div class="card green-top"><h3>Cuando un ajedrecista analiza...</h3><div class="steps"><div class="step"><b>1</b>Observa el tablero</div><div class="step"><b>2</b>Identifica jugadas posibles</div><div class="step"><b>3</b>Calcula variantes</div><div class="step"><b>4</b>Compara y descarta opciones</div><div class="step"><b>5</b>Elige una jugada</div></div></div>
+      <div><div class="card" style="margin-bottom:18px"><div class="icon green">⌘</div><h3>¿Qué es un algoritmo?</h3><p>Una serie ordenada y finita de instrucciones para resolver un problema o alcanzar un resultado.</p><div class="quote" style="font-size:17px">Es como una receta: indica qué hacer, en qué orden y bajo qué condiciones.</div></div><p class="takeaway">Partida = problema · Jugada = solución · Variante = camino</p></div>
     </div>
+  </section>
 
-    <script>
-        let currentSlide = 0;
-        const slides = document.querySelectorAll('.slide');
-        const totalSlides = slides.length;
+  <section class="slide">
+    <span class="section-tab">PUNTO 2</span><span class="kicker"><span class="num">2</span>Votación en vivo</span>
+    <h2>¿Quién está mejor en esta posición?</h2>
+    <div class="grid2 wide-left">
+      <div class="visual landscape"><img src="imagenes/01_posicion_dxf7.png" alt="Posición interactiva con la jugada Dxf7"></div>
+      <div class="card green-top"><h3>Juegan las blancas</h3><p style="font-size:16px">La jugada propuesta es:</p><div style="font-size:55px;font-weight:900;letter-spacing:2px;margin:0 0 10px">Dxf7</div><div class="question">¿La jugarías?</div><button class="reveal-btn" onclick="reveal(this)">Mostrar respuesta</button><div class="answer">Sí. Dxf7 es jaque mate: la dama está protegida por el alfil de c4 y las negras no tienen una respuesta legal.</div><p style="font-size:14px;margin-top:17px">Antes de responder, observa las defensas y la seguridad del rey.</p></div>
+    </div>
+  </section>
 
-        function updateUI() {
-            slides.forEach((slide, index) => {
-                slide.classList.remove('active', 'previous');
-                if (index === currentSlide) {
-                    slide.classList.add('active');
-                } else if (index < currentSlide) {
-                    slide.classList.add('previous');
-                }
-            });
-        }
+  <section class="slide">
+    <span class="section-tab">PUNTO 3</span><span class="kicker"><span class="num">3</span>Representación de datos</span>
+    <h2>Para nosotros es un tablero; para el computador son datos</h2>
+    <p>Nosotros reconocemos piezas, amenazas y patrones. El computador necesita una descripción exacta de la posición.</p>
+    <div class="grid2 wide-right">
+      <div class="card"><h3>También necesita saber...</h3><ul><li>A quién le corresponde jugar</li><li>Qué piezas siguen en el tablero</li><li>Qué movimientos son legales</li><li>Si el enroque está disponible</li><li>Si existe captura al paso</li><li>El historial mínimo para aplicar las reglas</li></ul></div>
+      <table class="data-table"><thead><tr><th>Información visual</th><th>Representación</th></tr></thead><tbody><tr><td>♕ Dama blanca</td><td>h5</td></tr><tr><td>♗ Alfil blanco</td><td>c4</td></tr><tr><td>♚ Rey negro</td><td>e8</td></tr><tr><td>♟ Peón negro</td><td>f7</td></tr><tr><td>Turno actual</td><td>Blancas</td></tr><tr><td>Enroque</td><td>Disponible</td></tr></tbody></table>
+    </div>
+  </section>
 
-        function changeSlide(direction) {
-            currentSlide += direction;
-            if (currentSlide < 0) currentSlide = 0;
-            if (currentSlide >= totalSlides) currentSlide = totalSlides - 1;
-            updateUI();
-        }
+  <section class="slide">
+    <span class="section-tab">PUNTO 3</span><span class="kicker"><span class="num">3</span>Formato FEN</span>
+    <h2>Una “fotografía” digital del tablero</h2>
+    <p>FEN describe una posición concreta. A diferencia de PGN, no registra toda la secuencia de la partida.</p>
+    <div class="fen">r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR <span class="turn">w</span> <span class="castle">KQkq</span> - 4 4</div>
+    <div class="grid2" style="margin-top:24px"><div class="card"><h3>Cómo leerla</h3><ul><li>Las letras representan piezas</li><li>Los números representan casillas vacías</li><li><code style="color:#7dcfff">w</code> indica que juegan las blancas</li></ul></div><div><div class="question">Si recibiera solamente esta línea, ¿un programa podría reconstruir el tablero?</div><button class="reveal-btn" onclick="reveal(this)">Revelar</button><div class="answer">Sí. La línea contiene los datos necesarios para reconstruir la posición.</div></div></div>
+    <p class="takeaway">Transformar elementos del mundo real en datos es uno de los problemas fundamentales de la informática.</p>
+  </section>
 
-        function registrarVoto(tipo) {
-            const resultDiv = document.getElementById('vote-result');
-            const btns = document.querySelectorAll('.btn-vote');
-            
-            btns.forEach(b => b.style.opacity = '0.5');
-            setTimeout(() => {
-                btns.forEach(b => b.style.opacity = '1');
-            }, 200);
+  <section class="slide">
+    <span class="section-tab">PUNTO 4</span><span class="kicker"><span class="num">4</span>Algoritmos</span>
+    <h2>Calcular una variante también es seguir un algoritmo</h2>
+    <div class="grid2 wide-right"><div><div class="question">Cuando vieron Dxf7, ¿qué hicieron mentalmente para decidir si jugarla?</div><p style="margin-top:18px">Aunque lo hicieron con rapidez e intuición, siguieron una secuencia: comprobar la jugada, reconocer el jaque y buscar respuestas legales.</p><div class="quote" style="font-size:17px">Stockfish no recibe la orden “juega Dxf7”. Recibe instrucciones para generar, comprobar y estudiar movimientos.</div></div><div class="visual square"><img src="imagenes/02_algoritmo_dxf7.png" alt="Algoritmo para comprobar Dxf7"></div></div>
+  </section>
 
-            if (tipo === 'yes') {
-                // SÍ es la respuesta correcta (Dxf7 es Jaque Mate)
-                resultDiv.innerHTML = '<span style="color: var(--chess-green);"><i class="fa-solid fa-check"></i> ¡Correcto! Es Jaque Mate. Observaste bien la falta de defensas.</span>';
-            } else {
-                // NO es la respuesta incorrecta
-                resultDiv.innerHTML = '<span style="color: var(--chess-red);"><i class="fa-solid fa-xmark"></i> ¡Cuidado! Si no juegas Dxf7 pierdes la oportunidad de dar Jaque Mate.</span>';
-            }
-        }
+  <section class="slide">
+    <span class="section-tab">PUNTO 4</span><span class="kicker"><span class="num">4</span>Humano y computador</span>
+    <h2>Dos formas de calcular una variante</h2>
+    <div class="compare"><div class="card human"><div class="head">🧠 Ajedrecista</div><ul><li>Utiliza experiencia e intuición</li><li>Selecciona jugadas candidatas</li><li>Imagina respuestas</li><li>Evalúa si el resultado parece bueno</li><li>Puede cometer errores de cálculo</li></ul></div><div class="card machine"><div class="head">💻 Computador</div><ul><li>Ejecuta instrucciones programadas</li><li>Genera movimientos sistemáticamente</li><li>Simula posiciones nuevas</li><li>Calcula y compara evaluaciones</li><li>Revisa enormes cantidades de posiciones</li></ul></div></div>
+    <div class="question" style="margin-top:22px">¿Qué ocurre cuando el rival tiene cinco respuestas y después nosotros tenemos otras cinco jugadas?</div>
+    <p class="takeaway">Cada movimiento abre nuevas posibilidades: aparece el árbol de búsqueda.</p>
+  </section>
 
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowRight' || e.key === ' ') {
-                if (currentSlide < totalSlides - 1) changeSlide(1);
-            } else if (e.key === 'ArrowLeft') {
-                if (currentSlide > 0) changeSlide(-1);
-            }
-        });
+  <section class="slide">
+    <span class="section-tab">PUNTO 5</span><span class="kicker"><span class="num">5</span>Árbol de búsqueda</span>
+    <h2>Cada nodo es una posición; cada rama es una jugada</h2>
+    <div class="grid2 wide-left"><div class="visual square"><img src="imagenes/03_elementos_arbol_busqueda.png" alt="Elementos de un árbol de búsqueda en ajedrez"></div><div class="card"><table class="data-table"><thead><tr><th>Elemento</th><th>En ajedrez</th></tr></thead><tbody><tr><td>Nodo raíz</td><td>Posición actual</td></tr><tr><td>Rama</td><td>Una jugada</td></tr><tr><td>Nodo hijo</td><td>Posición resultante</td></tr><tr><td>Nivel</td><td>Un medio movimiento</td></tr><tr><td>Hoja</td><td>Fin del análisis</td></tr><tr><td>Profundidad</td><td>Medios movimientos calculados</td></tr></tbody></table></div></div>
+  </section>
 
-        updateUI();
-    </script>
+  <section class="slide">
+    <span class="section-tab">PUNTO 5</span><span class="kicker"><span class="num">5</span>Jugadas y respuestas</span>
+    <h2>Stockfish también supone que el rival responderá bien</h2>
+    <div class="grid2 wide-left"><div class="visual square"><img src="imagenes/04_arbol_dxf7.png" alt="Árbol simplificado de la jugada Dxf7"></div><div><div class="quote">“Si realizo esta jugada, ¿cuál es la mejor respuesta que puede encontrar mi rival?”</div><div class="card" style="margin-top:18px"><h3>La evaluación vuelve hacia la raíz</h3><p>Stockfish busca el mejor resultado posible suponiendo que el rival elegirá la respuesta más perjudicial para nosotros.</p><div class="chips"><span class="chip">+1,2</span><span class="chip">+2,0</span><span class="chip">−3,2</span></div></div><div class="question" style="margin-top:18px">Si cada posición abre decenas de jugadas, ¿puede analizar absolutamente todo?</div></div></div>
+  </section>
+
+  <section class="slide">
+    <span class="section-tab">PUNTO 6</span><span class="kicker"><span class="num">6</span>Explosión combinatoria</span>
+    <h2>¿Stockfish analiza todas las variantes?</h2>
+    <div class="grid2 wide-left"><div class="visual square"><img src="imagenes/05_crecimiento_arbol.png" alt="Crecimiento del árbol de búsqueda"></div><div><div class="metric"><strong>NO</strong><p style="margin:0">El árbol crece demasiado rápido.</p></div><p style="margin-top:15px">Usando 30 movimientos por posición como ejemplo simplificado:</p><div class="formula"><span>30 posibilidades</span><b>→</b><span>30⁶</span><b>=</b><span class="result">729.000.000</span></div><p style="font-size:14px;margin-top:14px">La cantidad real cambia según la posición y algunas ramas terminan antes por mate, tablas o falta de movimientos legales.</p><div class="question">¿Cómo decide qué ramas continuar y cuáles puede dejar de analizar?</div></div></div>
+  </section>
+
+  <section class="slide">
+    <span class="section-tab">PUNTO 7</span><span class="kicker"><span class="num">7</span>Poda y eficiencia</span>
+    <h2>Si una rama no puede cambiar la decisión, se corta</h2>
+    <div class="grid2 wide-left"><div class="visual square"><img src="imagenes/06_ejemplo_poda.png" alt="Ejemplo de poda de ramas"></div><div><div class="question">Si una jugada gana una dama y otra pierde inmediatamente una torre, ¿calcularían la segunda durante diez jugadas más?</div><button class="reveal-btn" onclick="reveal(this)">Revelar</button><div class="answer">No. Nosotros también abandonamos variantes cuando comprobamos que no superan una opción ya encontrada.</div><div class="card" style="margin-top:18px"><p style="margin:0">La jugada A garantiza <strong style="color:var(--green2)">+3</strong>. Si en la jugada B las negras ya pueden reducir el resultado a <strong>+1</strong>, las respuestas restantes no cambiarán la elección.</p></div></div></div>
+  </section>
+
+  <section class="slide">
+    <span class="section-tab">PUNTO 7</span><span class="kicker"><span class="num">7</span>Tres estrategias</span>
+    <h2>Poda, reducción y extensión</h2>
+    <div class="grid3"><div class="card green-top"><div class="icon green">✂</div><h3>Poda</h3><p>No continúa analizando una rama que no cambiará la decisión.</p></div><div class="card green-top"><div class="icon green">↘</div><h3>Reducción</h3><p>Analiza una rama menos prometedora con menor profundidad.</p></div><div class="card green-top"><div class="icon green">⌕</div><h3>Extensión</h3><p>Profundiza en una variante crítica, como un jaque o una táctica.</p></div></div>
+    <div class="card" style="margin-top:20px"><div class="chips"><span class="chip">Captura decisiva → profundizar</span><span class="chip">Jaque peligroso → profundizar</span><span class="chip">Jugada tranquila → análisis normal</span><span class="chip">Jugada tardía → reducir</span><span class="chip">No cambia el resultado → podar</span></div></div>
+    <p class="takeaway">La profundidad no es uniforme: algunas variantes terminan antes y otras se estudian mucho más.</p>
+  </section>
+
+  <section class="slide">
+    <span class="section-tab">PUNTO 8</span><span class="kicker"><span class="num">8</span>Evaluación</span>
+    <h2>¿Qué elementos observas para decidir quién está mejor?</h2>
+    <div class="grid2 wide-left"><div class="visual square"><img src="imagenes/07_posicion_evaluacion.png" alt="Posición para evaluar quién está mejor"></div><div><div class="chips"><span class="chip">Material</span><span class="chip">Desarrollo</span><span class="chip">Control del centro</span><span class="chip">Seguridad del rey</span><span class="chip">Actividad</span></div><div class="question" style="margin-top:22px">¿Basta con contar las piezas?</div><button class="reveal-btn" onclick="reveal(this)">Revelar</button><div class="answer">No. La ubicación, coordinación y seguridad también pueden cambiar por completo la evaluación.</div><p style="margin-top:18px">Cuando la búsqueda llega a una hoja, Stockfish necesita asignarle un valor para comparar esa variante con las demás.</p></div></div>
+  </section>
+
+  <section class="slide">
+    <span class="section-tab">PUNTO 8</span><span class="kicker"><span class="num">8</span>Evaluador sencillo</span>
+    <h2>Podríamos sumar factores manualmente</h2>
+    <div class="grid2 wide-left"><div class="visual square"><img src="imagenes/08_evaluador_sencillo.png" alt="Evaluador sencillo de una posición"></div><div><div class="formula"><span>Material</span><b>+</b><span>Seguridad</span><b>+</b><span>Actividad</span><b>+</b><span>Espacio</span></div><div class="question" style="margin-top:20px">Entonces, ¿Stockfish evalúa exactamente de esta manera?</div><button class="reveal-btn" onclick="reveal(this)">Mostrar respuesta</button><div class="answer">No. Es un modelo didáctico. Programar manualmente una regla para cada situación sería demasiado complejo.</div><p style="margin-top:17px">El valor de una pieza cambia según su ubicación, la seguridad de los reyes y las relaciones con las demás piezas.</p></div></div>
+  </section>
+
+  <section class="slide">
+    <span class="section-tab">PUNTO 8</span><span class="kicker"><span class="num">8</span>Red neuronal</span>
+    <h2>Un modelo matemático que aprende relaciones y patrones</h2>
+    <div class="grid2 wide-left"><div class="visual square"><img src="imagenes/09_red_neuronal_datos_patrones.png" alt="Datos, patrones y resultado en una red neuronal"></div><div><div class="quote">Una red neuronal recibe datos, los combina mediante conexiones con diferentes niveles de importancia y produce un resultado.</div><div class="mini-flow" style="margin-top:22px"><span class="flow-box">Datos</span><span class="flow-arr">→</span><span class="flow-box">Combinación</span><span class="flow-arr">→</span><span class="flow-box">Patrones</span><span class="flow-arr">→</span><span class="flow-box">Resultado</span></div><p style="margin-top:18px">En lugar de escribir todas las reglas, el modelo ajusta relaciones usando muchos ejemplos.</p></div></div>
+  </section>
+
+  <section class="slide">
+    <span class="section-tab">PUNTO 8</span><span class="kicker"><span class="num">8</span>Información de entrada</span>
+    <h2>¿Qué información analiza?</h2>
+    <div class="grid2 wide-left"><div class="visual square"><img src="imagenes/10_informacion_analizada.png" alt="Información analizada por una red neuronal de ajedrez"></div><div><div class="card"><h3>En nuestro ejemplo</h3><ul><li>Ubicación de las piezas</li><li>Jugador que tiene el turno</li><li>Relaciones y amenazas entre piezas</li></ul></div><p style="margin-top:18px">La red combina esta información y produce una estimación de la posición, como <strong style="color:var(--green2)">+1,7</strong>.</p><div class="quote" style="font-size:17px">La red no “ve” el tablero como nosotros: procesa una representación numérica.</div></div></div>
+  </section>
+
+  <section class="slide">
+    <span class="section-tab">PUNTO 8</span><span class="kicker"><span class="num">8</span>Analogía</span>
+    <h2>Distintas miradas, una conclusión</h2>
+    <div class="grid2 wide-left"><div class="visual square"><img src="imagenes/11_analogia_miradas.png" alt="Analogía de varias personas evaluando aspectos del tablero"></div><div><div class="quote">Una persona observa la seguridad del rey, otra la actividad y otra la estructura de peones. Después combinan sus observaciones.</div><ul style="margin-top:20px"><li>Recibe varios datos</li><li>Detecta combinaciones</li><li>Asigna importancias</li><li>Produce una respuesta</li></ul><p style="font-size:15px;margin-top:17px">La red no necesariamente separa los conceptos como una persona; puede aprender patrones conjuntos más complejos.</p></div></div>
+  </section>
+
+  <section class="slide">
+    <span class="section-tab">PUNTO 8</span><span class="kicker"><span class="num">8</span>Partes de la red</span>
+    <h2>Entradas, conexiones, capas y salida</h2>
+    <div class="grid2 wide-left"><div class="visual square"><img src="imagenes/12_partes_red_neuronal.png" alt="Entradas, conexiones, capas internas y salida"></div><div><table class="data-table"><thead><tr><th>Parte</th><th>En ajedrez</th></tr></thead><tbody><tr><td>Entradas</td><td>Posiciones de las piezas</td></tr><tr><td>Conexiones</td><td>Relaciones con distintos pesos</td></tr><tr><td>Capas internas</td><td>Combinan la información</td></tr><tr><td>Salida</td><td>Valor estimado</td></tr></tbody></table><div class="card" style="margin-top:18px"><h3>¿Qué es un peso?</h3><p style="margin:0;font-size:16px">Un valor que indica cuánta influencia tiene una conexión en el resultado.</p></div></div></div>
+  </section>
+
+  <section class="slide">
+    <span class="section-tab">PUNTO 8</span><span class="kicker"><span class="num">8</span>Conexión con Stockfish</span>
+    <h2>¿Cómo trabaja NNUE?</h2>
+    <div class="grid2 wide-left"><div class="visual square"><img src="imagenes/13_proceso_nnue.png" alt="Proceso completo de evaluación NNUE"></div><div><p class="lead">Stockfish utiliza una red neuronal especializada llamada <strong>NNUE</strong>.</p><div class="steps"><div class="step"><b>1</b>La búsqueda genera posiciones</div><div class="step"><b>2</b>NNUE recibe los datos del tablero</div><div class="step"><b>3</b>La red produce una evaluación</div><div class="step"><b>4</b>La búsqueda compara las variantes</div></div><div class="quote" style="font-size:18px;margin-top:18px">NNUE no elige directamente la jugada: evalúa las posiciones que encuentra el árbol de búsqueda.</div></div></div>
+    <p class="takeaway">La búsqueda explora · NNUE evalúa · Stockfish compara</p>
+  </section>
+
+  <div id="chrome">
+    <div id="progress-track"><div id="progress"></div></div>
+    <span class="hint">← → para navegar · R para revelar · F para pantalla completa</span>
+    <span id="counter">1 / 20</span>
+    <div class="navs"><button class="nav-btn secondary" id="prev" aria-label="Anterior">←</button><button class="nav-btn" id="next" aria-label="Siguiente">→</button></div>
+  </div>
+</main>
+<script>
+  const slides=[...document.querySelectorAll('.slide')];let current=Math.max(0,Math.min(slides.length-1,Number(new URLSearchParams(location.search).get('slide'))||0));
+  const counter=document.getElementById('counter'),progress=document.getElementById('progress'),prev=document.getElementById('prev'),next=document.getElementById('next');
+  function update(){slides.forEach((s,i)=>{s.classList.toggle('active',i===current);s.classList.toggle('before',i<current)});counter.textContent=`${current+1} / ${slides.length}`;progress.style.width=`${((current+1)/slides.length)*100}%`;prev.disabled=current===0;next.disabled=current===slides.length-1}
+  function go(delta){current=Math.max(0,Math.min(slides.length-1,current+delta));update()}
+  function reveal(btn){const ans=btn.nextElementSibling;if(ans){ans.classList.add('show');btn.style.display='none'}}
+  prev.addEventListener('click',()=>go(-1));next.addEventListener('click',()=>go(1));
+  document.addEventListener('keydown',e=>{if(['ArrowRight','PageDown',' '].includes(e.key)){e.preventDefault();go(1)}else if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();go(-1)}else if(e.key==='Home'){current=0;update()}else if(e.key==='End'){current=slides.length-1;update()}else if(e.key.toLowerCase()==='r'){const b=slides[current].querySelector('.reveal-btn');if(b)reveal(b)}else if(e.key.toLowerCase()==='f'){document.documentElement.requestFullscreen?.()}});
+  let startX=0;document.addEventListener('touchstart',e=>startX=e.changedTouches[0].screenX,{passive:true});document.addEventListener('touchend',e=>{const d=e.changedTouches[0].screenX-startX;if(Math.abs(d)>45)go(d<0?1:-1)},{passive:true});update();
+</script>
 </body>
 </html>
