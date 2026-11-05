@@ -290,8 +290,8 @@
                     <h2 style="font-size: 2rem; margin-bottom: 40px;">¿Pensamos igual?</h2>
                     
                     <!-- Logos libres para posicionarse en las esquinas -->
-                    <img src="logo_UACh.svg" alt="Logo UACh" class="logo logo-izq">
-                    <img src="logo_Informatica.jpeg" alt="Logo Instituto de Informática" class="logo logo-der">
+                    <img src="logos/logo_UACh.svg" alt="Logo UACh" class="logo logo-izq">
+                    <img src="logos/logo_Informatica.jpeg" alt="Logo Instituto de Informática" class="logo logo-der">
                     
                     <!-- Nueva caja de información sin estilos inline de fondo/color -->
                     <div class="info-box">
@@ -304,23 +304,49 @@
 
             <!-- Diapositiva 2: Introducción -->
             <div class="slide" id="slide-1">
-                <span class="badge">Conceptos Base</span>
-                <h2>¿Qué tienen en común el ajedrez y la Informática?</h2>
-                <div class="grid-2">
+    <div class="slide-content" style="max-width: 1000px; text-align: left; padding: 40px;">
+        <span style="color: var(--chess-green); font-weight: bold; text-transform: uppercase; font-size: 0.9rem; letter-spacing: 1px;">Conceptos Base</span>
+        <h2 style="font-size: 2.2rem; margin-top: 10px; margin-bottom: 20px; color: #fff;">¿Qué tienen en común el ajedrez y la Informática?</h2>
+        
+        <p style="color: #9f9488; font-size: 1.1rem; margin-bottom: 30px;">
+            Ambas disciplinas buscan resolver problemas complejos tomando decisiones lógicas en entornos estructurados.
+        </p>
+
+        <div style="display: flex; gap: 40px; align-items: center;">
+            <!-- Columna de texto con viñetas separadas -->
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+                <div style="display: flex; gap: 15px; align-items: flex-start;">
+                    <i class="fa-solid fa-chess-board" style="color: var(--chess-green); font-size: 1.5rem; margin-top: 4px;"></i>
                     <div>
-                        <p>Ambas disciplinas buscan resolver problemas complejos tomando decisiones lógicas en entornos estructurados.</p>
-                        <ul>
-                            <li><i class="fa-solid fa-check"></i> <strong>Ajedrez:</strong> Cálculo de variantes para encontrar la mejor jugada.</li>
-                            <li><i class="fa-solid fa-microchip"></i> <strong>Informática:</strong> Ejecución de algoritmos para encontrar la solución óptima.</li>
-                            <li><i class="fa-solid fa-code-branch"></i> <strong>En común:</strong> Descartar las malas opciones de forma eficiente.</li>
-                        </ul>
+                        <strong style="color: #fff; font-size: 1.1rem;">Ajedrez:</strong>
+                        <span style="color: #cfd0cceb; display: block; margin-top: 4px;">Cálculo de variantes para encontrar la mejor jugada.</span>
                     </div>
-                    <div style="text-align: center;">
-                        <i class="fa-solid fa-brain" style="font-size: 8rem; color: var(--chess-bg-light); text-shadow: 0 0 20px rgba(129, 182, 76, 0.3);"></i>
-                        <i class="fa-solid fa-network-wired" style="font-size: 8rem; color: var(--chess-green); margin-left: -40px;"></i>
+                </div>
+
+                <div style="display: flex; gap: 15px; align-items: flex-start;">
+                    <i class="fa-solid fa-microchip" style="color: var(--chess-green); font-size: 1.5rem; margin-top: 4px;"></i>
+                    <div>
+                        <strong style="color: #fff; font-size: 1.1rem;">Informática:</strong>
+                        <span style="color: #cfd0cceb; display: block; margin-top: 4px;">Ejecución de algoritmos para encontrar la solución óptima.</span>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 15px; align-items: flex-start;">
+                    <i class="fa-solid fa-network-wired" style="color: var(--chess-green); font-size: 1.5rem; margin-top: 4px;"></i>
+                    <div>
+                        <strong style="color: #fff; font-size: 1.1rem;">En común:</strong>
+                        <span style="color: #cfd0cceb; display: block; margin-top: 4px;">Descartar las malas opciones de forma eficiente.</span>
                     </div>
                 </div>
             </div>
+
+            <!-- Icono gráfico lateral o contenedor visual -->
+            <div style="flex: 0 0 250px; text-align: center;">
+                <i class="fa-solid fa-brain" style="font-size: 8rem; color: var(--chess-green); opacity: 0.8;"></i>
+            </div>
+        </div>
+        </div>
+    </div>
 
             <!-- Diapositiva 3: Interactiva -->
             <div class="slide" id="slide-2">
