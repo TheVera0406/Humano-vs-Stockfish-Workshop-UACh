@@ -267,7 +267,7 @@
                         <!-- Contenedor de la Imagen del Tablero -->
                         <div style="border: 8px solid var(--chess-bg-light); border-radius: 8px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.4);">
                             <!-- Guarda tu imagen en la carpeta 'logos' o cambia la ruta aquí -->
-                            <img src="logos/tablero_tactica.png" alt="Tablero de Ajedrez Táctica" style="width: 100%; height: auto; display: block;">
+                            <img src="tableros/board_1.png" style="width: 100%; height: auto; display: block;">
                         </div>
 
                         <!-- Panel de votación -->
@@ -556,9 +556,11 @@
             }, 200);
 
             if (tipo === 'yes') {
-                resultDiv.innerHTML = '<span style="color: var(--chess-red);"><i class="fa-solid fa-xmark"></i> ¡Cuidado! Revisa las defensas antes de capturar.</span>';
+                // SÍ es la respuesta correcta (Dxf7 es Jaque Mate)
+                resultDiv.innerHTML = '<span style="color: var(--chess-green);"><i class="fa-solid fa-check"></i> ¡Correcto! Es Jaque Mate. Observaste bien la falta de defensas.</span>';
             } else {
-                resultDiv.innerHTML = '<span style="color: var(--chess-green);"><i class="fa-solid fa-check"></i> ¡Excelente intuición!</span>';
+                // NO es la respuesta incorrecta
+                resultDiv.innerHTML = '<span style="color: var(--chess-red);"><i class="fa-solid fa-xmark"></i> ¡Cuidado! Si no juegas Dxf7 pierdes la oportunidad de dar Jaque Mate.</span>';
             }
         }
 
