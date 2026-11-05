@@ -22,6 +22,3 @@ Humano-vs-Stockfish---Workshop-UACh-main/
 
 Abre `humano_vs_stockfish.html` en un navegador. Utiliza las flechas del teclado, la barra espaciadora o los botones inferiores para cambiar de diapositiva. La tecla `R` muestra la respuesta de la diapositiva activa y `F` activa la pantalla completa.
 
-## Modificar una imagen
-
-Edita o reemplaza el archivo PNG correspondiente dentro de `imagenes/`, conservando su nombre. El HTML utiliza rutas relativas, por lo que no es necesario convertir las imágenes a Base64.
